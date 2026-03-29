@@ -1,0 +1,15 @@
+const fs = require('fs');
+const pkg = JSON.parse(fs.readFileSync('package.json'));
+pkg.scripts = { "dev": "next dev -p 8080", "build": "next build", "start": "next start -p 8080", "lint": "next lint" };
+delete pkg.dependencies['react-router-dom'];
+delete pkg.dependencies['@supabase/supabase-js'];
+delete pkg.devDependencies['vite'];
+delete pkg.devDependencies['@vitejs/plugin-react'];
+delete pkg.devDependencies['lovable-tagger'];
+pkg.dependencies['next'] = '14.2.3';
+pkg.dependencies['next-auth'] = '^4.24.7';
+pkg.dependencies['mongoose'] = '^8.3.0';
+pkg.dependencies['bcryptjs'] = '^2.4.3';
+pkg.devDependencies['@types/bcryptjs'] = '^2.4.6';
+fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+console.log('package.json updated');
