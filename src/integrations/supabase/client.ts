@@ -1,5 +1,17 @@
 // Mock supabase client to allow the application to compile without @supabase/supabase-js
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+const supabaseProjectId = process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID ?? "";
+
+if (typeof window === "undefined") {
+  console.log("[supabase] env loaded", {
+    hasUrl: Boolean(supabaseUrl),
+    hasPublishableKey: Boolean(supabasePublishableKey),
+    hasProjectId: Boolean(supabaseProjectId),
+  });
+}
+
 export const supabase = {
   from: (table: string) => ({
     select: (args?: any) => ({
