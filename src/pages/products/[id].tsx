@@ -10,7 +10,8 @@ import { motion } from "framer-motion";
 const ProductDetails = () => {
   const router = useRouter();
   const { id } = router.query;
-  const { data: book, isLoading } = useBook(id || "");
+  const bookId = typeof id === "string" ? id : "";
+  const { data: book, isLoading } = useBook(bookId);
   const { addToCart, toggleFavorite, isFavorite } = useCart();
 
   if (isLoading) {
