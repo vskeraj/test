@@ -1,4 +1,4 @@
-# 🔥 Firefly Bookstore
+# Welcome to our project
 
 A full-stack online bookstore built with **Next.js (Pages Router)**, **MongoDB/Mongoose**,
 **NextAuth**, and **Tailwind CSS**. Users can browse a curated catalog of books, search and
