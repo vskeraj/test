@@ -25,13 +25,18 @@ const Contact = () => {
 
   const onSubmit = async (formData: ContactForm) => {
     setSubmitError(null);
-    const { error } = await new Promise(r => setTimeout(() => r({ error: null }), 500)) as any /* mock db */;
-    if (error) {
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      setSubmitted(true);
+      reset();
+    } catch {
       setSubmitError("Failed to send message. Please try again.");
-      return;
     }
-    setSubmitted(true);
-    reset();
   };
 
   return (

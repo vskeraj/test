@@ -2,36 +2,48 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, ShoppingBag, Heart, TrendingUp, Loader2 } from "lucide-react";
+import { BookOpen, ShoppingBag, Heart, TrendingUp } from "lucide-react";
 import Link from 'next/link';
+import type { GetServerSideProps } from "next";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import dbConnect from "@/lib/mongodb";
+import Order from "@/models/Order";
+import Favorite from "@/models/Favorite";
 
-const Dashboard = () => {
+interface OrderItem {
+  quantity: number;
+}
+
+interface OrderDTO {
+  id: string;
+  total_amount: number;
+  status: string;
+  createdAt: string;
+  items: OrderItem[];
+}
+
+const Dashboard = ({ orders, favoritesCount }: { orders: OrderDTO[]; favoritesCount: number }) => {
   const { user } = useAuth();
-
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ["orders", user?.id],
-    queryFn: async () => {
-      const data = null; const error = null;
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const totalSpent = orders.reduce((s, o) => s + Number(o.total_amount), 0);
+  const booksOwned = orders.reduce(
+    (s, o) => s + (o.items?.reduce((n, i) => n + (Number(i.quantity) || 0), 0) ?? 0),
+    0
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 lg:px-8 py-12">
         <h1 className="font-display text-3xl text-foreground mb-2">Dashboard</h1>
-        <p className="text-muted-foreground mb-8">Welcome back to your reading sanctuary.</p>
+        <p className="text-muted-foreground mb-8">Welcome back{user?.name ? `, ${user.name}` : ""}, to your reading sanctuary.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           {[
-            { icon: BookOpen, label: "Books Read", value: "—", change: "Start reading" },
-            { icon: ShoppingBag, label: "Orders", value: orders?.length ?? 0, change: "All time" },
-            { icon: Heart, label: "Wishlist", value: "—", change: "Add favorites" },
-            { icon: TrendingUp, label: "Spent", value: orders ? `$${orders.reduce((s, o) => s + Number(o.total_amount), 0).toFixed(2)}` : "$0", change: "Total" },
+            { icon: BookOpen, label: "Books Owned", value: booksOwned, change: "From your orders" },
+            { icon: ShoppingBag, label: "Orders", value: orders.length, change: "All time" },
+            { icon: Heart, label: "Wishlist", value: favoritesCount, change: favoritesCount > 0 ? "Saved items" : "Add favorites" },
+            { icon: TrendingUp, label: "Spent", value: `$${totalSpent.toFixed(2)}`, change: "Total" },
           ].map(({ icon: Icon, label, value, change }) => (
             <div key={label} className="p-5 rounded-2xl bg-card card-surface">
               <Icon className="h-5 w-5 text-primary mb-3" />
@@ -47,15 +59,13 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="p-6 rounded-2xl bg-card card-surface">
             <h2 className="font-display text-lg text-foreground mb-4">Recent Orders</h2>
-            {isLoading ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 text-primary animate-spin" /></div>
-            ) : orders && orders.length > 0 ? (
+            {orders.length > 0 ? (
               <div className="space-y-3">
                 {orders.map((order) => (
                   <div key={order.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                     <div>
                       <p className="text-sm text-foreground tabular-nums">${Number(order.total_amount).toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${order.status === "delivered" ? "bg-green-500/10 text-green-400" : order.status === "shipped" ? "bg-blue-500/10 text-blue-400" : "bg-primary/10 text-primary"}`}>{order.status}</span>
                   </div>
@@ -87,6 +97,24 @@ const Dashboard = () => {
       <Footer />
     </div>
   );
+};
+
+// SSR: fetch the signed-in user's orders fresh on every request.
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const session = await getServerSession(ctx.req, ctx.res, authOptions);
+  if (!session) {
+    return { redirect: { destination: "/login", permanent: false } };
+  }
+
+  await dbConnect();
+  const userId = (session.user as any).id;
+  const [docs, favoritesCount] = await Promise.all([
+    (Order as any).find({ userId }).sort({ createdAt: -1 }),
+    (Favorite as any).countDocuments({ userId }),
+  ]);
+  const orders = JSON.parse(JSON.stringify(docs));
+
+  return { props: { orders, favoritesCount } };
 };
 
 export default Dashboard;

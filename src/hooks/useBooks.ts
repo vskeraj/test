@@ -16,7 +16,7 @@ export interface BookDB {
   created_at: string;
 }
 
-export const useBooks = (category?: string) => {
+export const useBooks = (category?: string, initialData?: BookDB[]) => {
   return useQuery({
     queryKey: ["books", category],
     queryFn: async () => {
@@ -28,10 +28,11 @@ export const useBooks = (category?: string) => {
       }
       return data;
     },
+    initialData,
   });
 };
 
-export const useBook = (id: string) => {
+export const useBook = (id: string, initialData?: BookDB) => {
   return useQuery({
     queryKey: ["book", id],
     queryFn: async () => {
@@ -40,5 +41,6 @@ export const useBook = (id: string) => {
       return await res.json() as BookDB;
     },
     enabled: !!id,
+    initialData,
   });
 };

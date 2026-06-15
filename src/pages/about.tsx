@@ -30,9 +30,9 @@ const About = () => (
         <h2 className="font-display text-2xl text-foreground mb-4">Our Team</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { name: "Arta Krasniqi", role: "Founder & Developer" },
-            { name: "Bleron Gashi", role: "UI/UX Designer" },
-            { name: "Diona Berisha", role: "Content Curator" },
+            { name: "Rita Ukiqi", role: "Founder & Developer" },
+            { name: "Rina Pajaziti", role: "Backend Developer" },
+            { name: "Vesa Skeraj", role: "Software Engineer" },
           ].map(({ name, role }) => (
             <div key={name} className="p-4 rounded-xl bg-card card-surface text-center">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3 font-display text-lg">

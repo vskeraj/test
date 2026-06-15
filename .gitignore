@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Next.js build output
+.next
+*.tsbuildinfo
+
+# Environment files (keep .env.example tracked as the template)
+.env
+.env*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

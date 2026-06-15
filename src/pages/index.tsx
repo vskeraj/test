@@ -3,13 +3,18 @@ import Footer from "@/components/Footer";
 import FireflyBanner from "@/components/FireflyBanner";
 import BookCard from "@/components/BookCard";
 import { useBooks } from "@/hooks/useBooks";
+import type { BookDB } from "@/hooks/useBooks";
 import { categories } from "@/data/books";
 import Link from 'next/link';
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Truck, Shield, Loader2 } from "lucide-react";
+import dbConnect from "@/lib/mongodb";
+import Product from "@/models/Product";
 
-const Index = () => {
-  const { data: books, isLoading } = useBooks();
+const Index = ({ initialBooks }: { initialBooks: BookDB[] }) => {
+  // Seed react-query with SSG data so server and client render identically
+  // (no loading-spinner flash, no hydration mismatch on the featured grid).
+  const { data: books, isLoading } = useBooks(undefined, initialBooks);
   const featured = books?.slice(0, 4) ?? [];
 
   return (
@@ -87,5 +92,18 @@ const Index = () => {
     </div>
   );
 };
+
+// SSG + ISR: pre-render the featured books at build time and revalidate every 60s.
+export async function getStaticProps() {
+  try {
+    await dbConnect();
+    const docs = await (Product as any).find({});
+    const initialBooks = JSON.parse(JSON.stringify(docs));
+    return { props: { initialBooks }, revalidate: 60 };
+  } catch {
+    // DB unavailable at build time — ship empty and let ISR + the client hook backfill.
+    return { props: { initialBooks: [] }, revalidate: 60 };
+  }
+}
 
 export default Index;
