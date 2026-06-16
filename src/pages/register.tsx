@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import OAuthButtons from "@/components/OAuthButtons";
 import { useState } from "react";
 
 const registerSchema = z.object({
@@ -79,6 +80,8 @@ const Register = () => {
               </button>
             </form>
           )}
+
+          {!success && <OAuthButtons />}
 
           {!success && (
             <p className="text-center text-sm text-muted-foreground mt-6">

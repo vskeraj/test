@@ -1,9 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
-
-import { useQuery } from "@tanstack/react-query";
-import { User, Mail, BookOpen, Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,39 +15,35 @@ type ProfileForm = z.infer<typeof profileSchema>;
 
 const Profile = () => {
   const { user } = useAuth();
+  const { update } = useSession();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const data = null; const error = null;
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const currentName = (user as any)?.name || "";
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProfileForm>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
-    values: { display_name: profile?.display_name || "" },
+    values: { display_name: currentName },
   });
 
   const onSubmit = async (data: ProfileForm) => {
     if (!user) return;
-    await new Promise(r => setTimeout(r, 500)) /* mock db */;
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setError(null);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.display_name }),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      // Refresh the session so the Header/avatar reflect the new name immediately.
+      await update({ name: data.display_name });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setError("Could not save your profile. Please try again.");
+    }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,10 +54,10 @@ const Profile = () => {
 
           <div className="flex items-center gap-4 mb-8 p-6 rounded-2xl bg-card card-surface">
             <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-display text-2xl">
-              {(profile?.display_name || user?.email || "U").charAt(0).toUpperCase()}
+              {(currentName || user?.email || "U").charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="font-display text-foreground">{profile?.display_name || "Reader"}</p>
+              <p className="font-display text-foreground">{currentName || "Reader"}</p>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
           </div>
@@ -78,8 +72,9 @@ const Profile = () => {
               <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
               <input value={user?.email || ""} disabled className="w-full px-4 py-2.5 rounded-lg bg-muted border border-border text-sm text-muted-foreground" />
             </div>
-            <button type="submit" className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm hover:bg-primary/90 transition-all active:scale-[0.98]">
-              {saved ? "✓ Saved!" : "Update Profile"}
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <button type="submit" disabled={isSubmitting} className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50">
+              {saved ? "✓ Saved!" : isSubmitting ? "Saving..." : "Update Profile"}
             </button>
           </form>
         </div>

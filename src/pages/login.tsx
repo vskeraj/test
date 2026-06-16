@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import OAuthButtons from "@/components/OAuthButtons";
 import { useState } from "react";
 
 const loginSchema = z.object({
@@ -64,7 +65,12 @@ const Login = () => {
             <button type="submit" disabled={isSubmitting} className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50">
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
+            <div className="text-center">
+              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot your password?</Link>
+            </div>
           </form>
+
+          <OAuthButtons />
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account? <Link href="/register" className="text-primary hover:underline">Create one</Link>
