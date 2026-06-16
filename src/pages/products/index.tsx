@@ -2,18 +2,21 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCard from "@/components/BookCard";
 import { useBooks } from "@/hooks/useBooks";
+import type { BookDB } from "@/hooks/useBooks";
 import { categories } from "@/data/books";
 import { useState } from "react";
 import { useRouter } from 'next/router';
 import { Search, Loader2 } from "lucide-react";
+import dbConnect from "@/lib/mongodb";
+import Product from "@/models/Product";
 
-const Products = () => {
+const Products = ({ initialBooks }: { initialBooks: BookDB[] }) => {
   const router = useRouter();
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const setSearchParams = (p) => { const url = new URL(window.location.href); Object.keys(p).forEach(key => url.searchParams.set(key, p[key])); router.push(url.pathname + url.search); };
   const activeCategory = searchParams.get("category") || "All";
   const [search, setSearch] = useState("");
-  const { data: books, isLoading } = useBooks();
+  const { data: books, isLoading } = useBooks(undefined, initialBooks);
 
   const filtered = (books ?? []).filter((b) => {
     const matchCat = activeCategory === "All" || b.category === activeCategory;
@@ -55,5 +58,18 @@ const Products = () => {
     </div>
   );
 };
+
+// SSG + ISR: pre-render the product list at build time and revalidate every 60s.
+export async function getStaticProps() {
+  try {
+    await dbConnect();
+    const docs = await (Product as any).find({});
+    const initialBooks = JSON.parse(JSON.stringify(docs));
+    return { props: { initialBooks }, revalidate: 60 };
+  } catch {
+    // DB unavailable at build time — ship empty and let ISR + the client hook backfill.
+    return { props: { initialBooks: [] }, revalidate: 60 };
+  }
+}
 
 export default Products;

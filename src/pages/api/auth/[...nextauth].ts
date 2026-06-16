@@ -1,16 +1,21 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import FacebookProvider from "next-auth/providers/facebook";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 
-export default NextAuth({
+export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_local_dev",
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "fake_id",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "fake_secret",
+    }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID || "fake_id",
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "fake_secret",
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -42,4 +47,6 @@ export default NextAuth({
     }
   },
   pages: { signIn: '/login' }
-});
+};
+
+export default NextAuth(authOptions);

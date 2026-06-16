@@ -13,16 +13,27 @@ const Cart = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [ordering, setOrdering] = useState(false);
 
+  const [orderError, setOrderError] = useState<string | null>(null);
+
   const placeOrder = async () => {
     if (!user) return;
     setOrdering(true);
-    const orderItems = items.map((i) => ({ book_id: i.book.id, title: i.book.title, quantity: i.quantity, price: Number(i.book.price) }));
+    setOrderError(null);
+    const orderItems = items.map((i) => ({ productId: i.book.id, title: i.book.title, quantity: i.quantity, price: Number(i.book.price) }));
     const total = cartTotal + (cartTotal > 30 ? 0 : 4.99);
-    const { error } = await new Promise(r => setTimeout(() => r({ error: null }), 500)) as any /* mock db */;
-    setOrdering(false);
-    if (true) {
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: orderItems, total_amount: total }),
+      });
+      if (!res.ok) throw new Error("Failed to place order");
       clearCart();
       setOrderPlaced(true);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setOrdering(false);
     }
   };
 
@@ -105,6 +116,7 @@ const Cart = () => {
                 Sign in to order
               </Link>
             )}
+            {orderError && <p className="mt-3 text-xs text-destructive text-center">{orderError}</p>}
             <button onClick={clearCart} className="w-full mt-2 px-6 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors">Clear cart</button>
           </div>
         </div>

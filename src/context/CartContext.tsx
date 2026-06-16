@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import type { BookDB } from "@/hooks/useBooks";
 
 interface CartItem {
@@ -22,8 +23,25 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { data: session } = useSession();
+  const userId = (session?.user as any)?.id as string | undefined;
+
   const [items, setItems] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Load the signed-in user's favorites from the database; clear on sign-out.
+  useEffect(() => {
+    if (!userId) {
+      setFavorites([]);
+      return;
+    }
+    let active = true;
+    fetch("/api/favorites")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((ids: string[]) => { if (active) setFavorites(ids); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [userId]);
 
   const addToCart = useCallback((book: BookDB) => {
     setItems((prev) => {
@@ -48,8 +66,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const toggleFavorite = useCallback((bookId: string) => {
-    setFavorites((prev) => prev.includes(bookId) ? prev.filter((id) => id !== bookId) : [...prev, bookId]);
-  }, []);
+    const wasFavorite = favorites.includes(bookId);
+    // Optimistic update for a snappy UI.
+    setFavorites((prev) => wasFavorite ? prev.filter((id) => id !== bookId) : [...prev, bookId]);
+    // Persist for signed-in users; guests keep favorites in memory only.
+    if (!userId) return;
+    fetch("/api/favorites", {
+      method: wasFavorite ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: bookId }),
+    }).catch(() => {
+      // Revert on failure.
+      setFavorites((prev) => wasFavorite ? [...prev, bookId] : prev.filter((id) => id !== bookId));
+    });
+  }, [favorites, userId]);
 
   const isFavorite = useCallback((bookId: string) => favorites.includes(bookId), [favorites]);
 

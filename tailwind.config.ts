@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Fraunces", "Georgia", "serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -84,12 +88,45 @@ export default {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "0.8" },
         },
+        "twinkle": {
+          "0%, 100%": { opacity: "0.15", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.35)" },
+        },
+        "drift": {
+          "0%, 100%": { transform: "translate(0, 0)" },
+          "50%": { transform: "translate(3%, -4%)" },
+        },
+        "bob": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+        "scroll-hint": {
+          "0%": { opacity: "0", transform: "translateY(0)" },
+          "40%": { opacity: "1" },
+          "80%, 100%": { opacity: "0", transform: "translateY(8px)" },
+        },
+        "ember": {
+          "0%": { transform: "translateY(0) translateX(0) scale(1)", opacity: "0" },
+          "12%": { opacity: "0.7" },
+          "85%": { opacity: "0.5" },
+          "100%": { transform: "translateY(-140px) translateX(var(--ember-drift, 10px)) scale(0.35)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "float": "float 3s ease-in-out infinite",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "twinkle": "twinkle 4s ease-in-out infinite",
+        "drift": "drift 16s ease-in-out infinite",
+        "bob": "bob 4s ease-in-out infinite",
+        "shimmer": "shimmer 6s linear infinite",
+        "scroll-hint": "scroll-hint 1.8s ease-in-out infinite",
+        "ember": "ember 7s ease-in-out infinite",
       },
     },
   },

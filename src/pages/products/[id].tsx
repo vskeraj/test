@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useCart } from "@/context/CartContext";
 import { useBook } from "@/hooks/useBooks";
+import type { BookDB } from "@/hooks/useBooks";
 import { Heart, ShoppingCart, ArrowLeft, Star, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const ProductDetails = () => {
+const ProductDetails = ({ initialBook }: { initialBook: BookDB }) => {
   const router = useRouter();
   const { id } = router.query;
-  const bookId = typeof id === "string" ? id : "";
-  const { data: book, isLoading } = useBook(bookId);
+  const bookId = typeof id === "string" ? id : initialBook?.id ?? "";
+  const { data: book, isLoading } = useBook(bookId, initialBook);
   const { addToCart, toggleFavorite, isFavorite } = useCart();
 
   if (isLoading) {
@@ -95,6 +96,43 @@ const ProductDetails = () => {
       <Footer />
     </div>
   );
+};
+
+import type { GetStaticPaths, GetStaticProps } from "next";
+import mongoose from "mongoose";
+import dbConnect from "@/lib/mongodb";
+import Product from "@/models/Product";
+
+// Pre-generate a page for each known product id; new ids render on first request.
+export const getStaticPaths: GetStaticPaths = async () => {
+  try {
+    await dbConnect();
+    const docs = await (Product as any).find({}, "_id");
+    const paths = docs.map((d: any) => ({ params: { id: d._id.toString() } }));
+    return { paths, fallback: "blocking" };
+  } catch {
+    // DB unavailable at build time — generate every page on first request via ISR.
+    return { paths: [], fallback: "blocking" };
+  }
+};
+
+// SSG + ISR: render the product statically and revalidate every 60s.
+export const getStaticProps: GetStaticProps = async ({ params }) => {
+  const id = params?.id as string;
+  if (!mongoose.isValidObjectId(id)) {
+    return { notFound: true, revalidate: 60 };
+  }
+  try {
+    await dbConnect();
+    const doc = await (Product as any).findById(id);
+    if (!doc) {
+      return { notFound: true, revalidate: 60 };
+    }
+    const initialBook = JSON.parse(JSON.stringify(doc));
+    return { props: { initialBook }, revalidate: 60 };
+  } catch {
+    return { notFound: true, revalidate: 60 };
+  }
 };
 
 export default ProductDetails;
