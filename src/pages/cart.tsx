@@ -5,52 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from "lucide-react";
 import Link from 'next/link';
-import { useState } from "react";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const [ordering, setOrdering] = useState(false);
-
-  const [orderError, setOrderError] = useState<string | null>(null);
-
-  const placeOrder = async () => {
-    if (!user) return;
-    setOrdering(true);
-    setOrderError(null);
-    const orderItems = items.map((i) => ({ productId: i.book.id, title: i.book.title, quantity: i.quantity, price: Number(i.book.price) }));
-    const total = cartTotal + (cartTotal > 30 ? 0 : 4.99);
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: orderItems, total_amount: total }),
-      });
-      if (!res.ok) throw new Error("Failed to place order");
-      clearCart();
-      setOrderPlaced(true);
-    } catch (err) {
-      setOrderError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setOrdering(false);
-    }
-  };
-
-  if (orderPlaced) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-20 text-center">
-          <ShoppingBag className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h1 className="font-display text-2xl text-foreground mb-2">Order placed!</h1>
-          <p className="text-muted-foreground mb-6">Your books are on their way.</p>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm">View Dashboard <ArrowRight className="h-4 w-4" /></Link>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return (
@@ -108,15 +66,14 @@ const Cart = () => {
               <div className="flex justify-between"><span className="font-display text-foreground">Total</span><span className="font-display text-xl text-primary tabular-nums">${(cartTotal + (cartTotal > 30 ? 0 : 4.99)).toFixed(2)}</span></div>
             </div>
             {user ? (
-              <button onClick={placeOrder} disabled={ordering} className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50">
-                {ordering ? "Placing order..." : "Place Order"}
-              </button>
+              <Link href="/checkout" className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm hover:bg-primary/90 transition-all active:scale-[0.98]">
+                Proceed to checkout <ArrowRight className="h-4 w-4" />
+              </Link>
             ) : (
               <Link href="/login" className="w-full flex items-center justify-center px-6 py-3 rounded-lg bg-primary text-primary-foreground font-display text-sm hover:bg-primary/90 transition-all">
                 Sign in to order
               </Link>
             )}
-            {orderError && <p className="mt-3 text-xs text-destructive text-center">{orderError}</p>}
             <button onClick={clearCart} className="w-full mt-2 px-6 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors">Clear cart</button>
           </div>
         </div>

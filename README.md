@@ -122,6 +122,25 @@ Gmail:
 If `SMTP_USER`/`SMTP_PASS` are empty, the reset link is logged to the server console
 instead — so the flow is fully testable locally without an email provider.
 
+### Payments (Stripe)
+
+Checkout uses Stripe's embedded **Payment Element**. The flow: `/cart` → `/checkout`
+creates a PaymentIntent (amount recomputed **server-side** from DB prices), the user pays
+on-page, and a **webhook** (`payment_intent.succeeded`) marks the order `paid`.
+
+1. Grab your **test** keys from the
+   [Stripe dashboard](https://dashboard.stripe.com/test/apikeys) and set
+   `STRIPE_SECRET_KEY` (`sk_test_…`) and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_test_…`).
+2. Forward webhooks locally with the [Stripe CLI](https://stripe.com/docs/stripe-cli):
+   ```bash
+   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   ```
+   Copy the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`, then restart the dev server.
+3. Pay with the test card **4242 4242 4242 4242**, any future expiry, any CVC/ZIP.
+
+The order's `paymentStatus` flips to `paid` once the webhook is received; the dashboard
+shows a Paid / Payment pending badge.
+
 ## 🗂️ Project Structure
 
 ```

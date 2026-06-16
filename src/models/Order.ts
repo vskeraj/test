@@ -20,6 +20,13 @@ const OrderSchema = new mongoose.Schema(
       enum: ["pending", "shipped", "delivered"],
       default: "pending",
     },
+    // Payment lifecycle (Stripe). Fulfillment `status` above is separate.
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid", "failed"],
+      default: "unpaid",
+    },
+    stripePaymentIntentId: { type: String },
   },
   {
     timestamps: true,

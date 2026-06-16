@@ -19,6 +19,7 @@ interface OrderDTO {
   id: string;
   total_amount: number;
   status: string;
+  paymentStatus?: string;
   createdAt: string;
   items: OrderItem[];
 }
@@ -67,7 +68,10 @@ const Dashboard = ({ orders, favoritesCount }: { orders: OrderDTO[]; favoritesCo
                       <p className="text-sm text-foreground tabular-nums">${Number(order.total_amount).toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${order.status === "delivered" ? "bg-green-500/10 text-green-400" : order.status === "shipped" ? "bg-blue-500/10 text-blue-400" : "bg-primary/10 text-primary"}`}>{order.status}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${order.paymentStatus === "paid" ? "bg-green-500/10 text-green-400" : order.paymentStatus === "failed" ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"}`}>{order.paymentStatus === "paid" ? "Paid" : order.paymentStatus === "failed" ? "Payment failed" : "Payment pending"}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${order.status === "delivered" ? "bg-green-500/10 text-green-400" : order.status === "shipped" ? "bg-blue-500/10 text-blue-400" : "bg-primary/10 text-primary"}`}>{order.status}</span>
+                    </div>
                   </div>
                 ))}
               </div>
