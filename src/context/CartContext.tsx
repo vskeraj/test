@@ -28,11 +28,32 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [items, setItems] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
+  // Gate localStorage writes until we've hydrated from it, so the initial empty
+  // state never clobbers a previously-saved cart/favorites.
+  const [hydrated, setHydrated] = useState(false);
 
-  // Load the signed-in user's favorites from the database; clear on sign-out.
+  // Hydrate the cart from localStorage once on mount (SSR-safe).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("firefly_cart");
+      if (raw) setItems(JSON.parse(raw));
+    } catch { /* ignore corrupt storage */ }
+    setHydrated(true);
+  }, []);
+
+  // Persist the cart whenever it changes (after hydration).
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem("firefly_cart", JSON.stringify(items)); } catch { /* ignore */ }
+  }, [items, hydrated]);
+
+  // Signed-in: load favorites from the database. Guest: load from localStorage.
   useEffect(() => {
     if (!userId) {
-      setFavorites([]);
+      try {
+        const raw = localStorage.getItem("firefly_favorites");
+        setFavorites(raw ? JSON.parse(raw) : []);
+      } catch { setFavorites([]); }
       return;
     }
     let active = true;
@@ -42,6 +63,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .catch(() => {});
     return () => { active = false; };
   }, [userId]);
+
+  // Persist guest favorites to localStorage (signed-in favorites live in the DB).
+  useEffect(() => {
+    if (userId) return;
+    try { localStorage.setItem("firefly_favorites", JSON.stringify(favorites)); } catch { /* ignore */ }
+  }, [favorites, userId]);
 
   const addToCart = useCallback((book: BookDB) => {
     setItems((prev) => {
