@@ -85,8 +85,42 @@ built-in catalog (`src/data/books.ts`) if the collection is empty.
 | `NEXTAUTH_URL` | ✅ | App base URL (`http://localhost:3000` in dev, Vercel URL in prod) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | optional | Google OAuth login |
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | optional | Facebook OAuth login |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | optional | SMTP for password-reset emails. If unset, reset links are logged to the server console. |
 
 To make a user an admin, set their `role` field to `"admin"` in the `users` collection.
+
+### Setting up Google / Facebook OAuth
+
+OAuth sign-in buttons appear on the Login/Register pages. The providers are only
+activated when their credentials are present in the environment (otherwise the buttons
+return a configuration error instead of crashing the app). To enable them:
+
+- **Google** — create an OAuth client at
+  [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials).
+  Add an Authorized redirect URI of `${NEXTAUTH_URL}/api/auth/callback/google`
+  (e.g. `http://localhost:3000/api/auth/callback/google`). Put the client ID/secret in
+  `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+- **Facebook** — create an app at
+  [Meta for Developers](https://developers.facebook.com/) → Facebook Login. Add a valid
+  OAuth redirect URI of `${NEXTAUTH_URL}/api/auth/callback/facebook`. Put the app ID/secret
+  in `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET`.
+
+On first OAuth sign-in a matching user is auto-created in MongoDB (keyed by email) so
+favorites and orders work the same as for email/password accounts.
+
+### Password reset (email)
+
+"Forgot your password?" on the Login page sends a reset link. The token is random,
+SHA-256-hashed in the DB, single-use, and expires after 1 hour. To send real email via
+Gmail:
+
+1. Enable 2-Step Verification on your Google account, then create an **App Password**
+   (Google Account → Security → App passwords).
+2. Set `SMTP_USER` to your Gmail address and `SMTP_PASS` to the 16-character App Password
+   (defaults: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`).
+
+If `SMTP_USER`/`SMTP_PASS` are empty, the reset link is logged to the server console
+instead — so the flow is fully testable locally without an email provider.
 
 ## 🗂️ Project Structure
 
