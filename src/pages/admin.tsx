@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Edit2, Plus, X, Loader2 } from "lucide-react";
+import { Trash2, Edit2, Plus, X, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +23,16 @@ const bookSchema = z.object({
 
 type BookForm = z.infer<typeof bookSchema>;
 
+interface ContactMessage {
+  _id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 const AdminPanel = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -35,6 +45,15 @@ const AdminPanel = () => {
       const res = await fetch("/api/products");
       if (!res.ok) throw new Error("Failed to load inventory");
       return (await res.json()) as BookDB[];
+    },
+  });
+
+  const { data: messages, isLoading: messagesLoading } = useQuery({
+    queryKey: ["admin-messages"],
+    queryFn: async () => {
+      const res = await fetch("/api/contact");
+      if (!res.ok) throw new Error("Failed to load messages");
+      return (await res.json()) as ContactMessage[];
     },
   });
 
@@ -180,6 +199,40 @@ const AdminPanel = () => {
             </div>
           </div>
         )}
+
+        {/* Contact messages */}
+        <div className="mt-12">
+          <div className="flex items-center gap-2 mb-4">
+            <Mail className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-xl text-foreground">Contact Messages</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">{messages?.length ?? 0}</span>
+          </div>
+
+          {messagesLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>
+          ) : messages && messages.length > 0 ? (
+            <div className="space-y-3">
+              {messages.map((m) => (
+                <div key={m._id} className="p-5 rounded-2xl bg-card card-surface">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div>
+                      <p className="font-display text-sm text-foreground">{m.subject}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {m.name} &lt;<a href={`mailto:${m.email}?subject=Re: ${encodeURIComponent(m.subject)}`} className="text-primary hover:underline">{m.email}</a>&gt;
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(m.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap border-l-2 border-primary/40 pl-3">{m.message}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 rounded-2xl bg-card card-surface text-center">
+              <p className="text-sm text-muted-foreground">No messages yet.</p>
+            </div>
+          )}
+        </div>
       </div>
       <Footer />
     </div>

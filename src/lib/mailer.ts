@@ -18,7 +18,7 @@ const transporter = isConfigured
 
 const from = process.env.EMAIL_FROM || smtpUser || "Firefly <no-reply@firefly.local>";
 
-export async function sendMail(opts: { to: string; subject: string; html: string; text?: string }) {
+export async function sendMail(opts: { to: string; subject: string; html: string; text?: string; replyTo?: string }) {
   if (!transporter) {
     // Dev fallback — surface the message (and any reset link) in the console.
     console.log("\n📧 [mailer] SMTP not configured — email not sent. Preview:");
